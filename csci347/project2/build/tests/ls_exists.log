@@ -1,0 +1,1 @@
+PASS tests/ls_exists (exit status: 0)

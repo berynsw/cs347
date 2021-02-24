@@ -1,0 +1,4 @@
+#!/bin/bash
+# Because I am a forgetful monkey
+
+time ./jacobi_run_tests_real

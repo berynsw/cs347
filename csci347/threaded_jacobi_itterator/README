@@ -1,0 +1,33 @@
+The epsilon value is set at the top of jacobi_iterator.c
+Typing make in the main folder, will produce 3 executables, 
+jacobi_speedup_test, jacobi_barrier_test, and diff_check. 
+
+The difference between speedup test and barrier test is matrix size and 
+partition strategy which required pre-processor defines.
+diff_check takes two matrix file paths as args and calculates
+their max difference.
+
+
+Here is an example of a jacobi_speedup_test run:
+./jacobi_speedup_test --barrier 0 --input input.mtx --output output --subtasks 7
+
+Here is an example of a jacobi_barrier_test run:
+./jacobi_barrier_test --barrier 1 --input input.mtx --output output --subtasks 256
+
+ARGS     
+--barrier:  0 is sem heap, 1 is cond barrier, 2 is pthread barrier
+--input:    the input file path of course
+--output:   output file path
+--subtasks: number of child threads 
+            (only powers of 2 for barrier test, all natural numbers for speedup test)
+Note: all args are required (sorry)
+
+Outut Format: number of iterations,real-time elapsed(seconds),cpu-time elapsed(seconds)
+Note: there is no newline at the end of each output so that we could control them with 
+a running script. Running the script runs all the tests. 
+The script assumes that data is contained in a folder called data_ref.
+
+
+
+
+

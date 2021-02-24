@@ -1,0 +1,18 @@
+TEMP=$(mktemp -d)
+WORK=$(pwd)
+
+touch ${TEMP}/A
+
+
+cd ${TEMP}
+${WORK}/find . -type f > A
+
+cat <<EOF | diff A -
+./A
+EOF
+status=$?
+
+cd ${WORK}
+rm -rf ${TEMP}
+
+exit ${status}

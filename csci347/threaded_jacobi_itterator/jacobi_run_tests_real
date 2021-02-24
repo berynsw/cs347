@@ -1,0 +1,117 @@
+#!/bin/bash
+# Entire testing sequence, standardized for you pleasure
+
+# Compile everything
+make clean
+make all
+
+# Compiled program names
+SPEED_TEST_PROG=./jacobi_speedup_test
+BARR_TEST_PROG=./jacobi_barrier_test
+DIFF_CHECK_PROG=./diff_check
+
+# Argument definitions
+INPUT=data_ref/input.mtx
+OUTPUT=output
+OUTPUT_CHECK=data_ref/output.mtx #output.mtx
+
+SEM_HEAP_BARRIER=0
+COND_BARRIER=1
+PTHREAD_BARRIER=2
+
+# Testing defines
+SPEED_TEST_THREADS=(1 2 3 4 5 6 7 8 32 128 256)
+SPEED_TEST_BARRIERS=(${SEM_HEAP_BARRIER} ${COND_BARRIER} ${PTHREAD_BARRIER})
+SPEED_TEST_SAMPLES=3
+
+BARR_TEST_THREADS=(1 4 16 64 256 1024 $((64*64))) # 64x64=4096
+BARR_TEST_BARRIERS=(${SEM_HEAP_BARRIER} ${COND_BARRIER} ${PTHREAD_BARRIER})
+BARR_TEST_SAMPLES=3
+
+# Stores all testing data
+DATA_OUT=data.csv
+
+# In the case of back to back tests, will hopefully make this less confusing
+ls | grep *${DATA_OUT}* > /dev/null
+if [ $? = 0 ]
+then
+    echo "appending to test" >> ${DATA_OUT}
+fi
+
+# Header for the jacobi pseedup test
+echo "jacobi_speed_test," >> ${DATA_OUT}
+echo "test,thread_num,barr,iterations,real_time,cpu_time,min_diff,max_diff," \
+	>> ${DATA_OUT}
+
+# Testing loop for the jacobi speedup test
+for thread_num in ${SPEED_TEST_THREADS[*]}
+do
+    for barr in ${SPEED_TEST_BARRIERS[*]}
+    do
+        s=0
+        while [ $s -lt $SPEED_TEST_SAMPLES ]
+        do
+            echo -n "speed_test,${thread_num},${barr}," >> ${DATA_OUT}
+            ${SPEED_TEST_PROG} --subtasks ${thread_num} \
+				--input ${INPUT} --output ${OUTPUT} \
+                --barrier ${barr} >> ${DATA_OUT}
+            if [ $? -ne 0 ]
+            then
+                echo >> ${DATA_OUT}
+                echo "aborted," >> ${DATA_OUT}
+                echo "After speed_test..."
+                echo "Error detected, test aborted"
+                exit
+            fi
+            ${DIFF_CHECK_PROG} ${OUTPUT_CHECK} ${OUTPUT} >> ${DATA_OUT}
+            if [ $? -ne 0 ]
+            then
+                echo >> ${DATA_OUT}
+                echo "aborted," >> ${DATA_OUT}
+                echo "After speed_test..."
+                echo "After diff_check..."
+                echo "Error detected, test aborted"
+                exit
+            fi
+            echo >> ${DATA_OUT}
+            
+            echo "speed_test done: thread_num=${thread_num}, barr=${barr},"\
+				"s=${s}"
+            s=$((s+1))
+        done
+    done
+done
+
+# Header for the jacobi barrier test
+echo "jacobi_barr_test," >> ${DATA_OUT}
+echo "test,thread_num,barr,iterations,real_time,cpu_time," >> ${DATA_OUT}
+
+# Testing loop for the jacobi barrier test
+for thread_num in ${BARR_TEST_THREADS[*]}
+do
+    for barr in ${BARR_TEST_BARRIERS[*]}
+    do
+        s=0
+        while [ $s -lt $BARR_TEST_SAMPLES ]
+        do
+            echo -n "barr_test,${thread_num},${barr}," >> ${DATA_OUT}
+            ${BARR_TEST_PROG} --subtasks ${thread_num} \
+				--input ${INPUT} --output ${OUTPUT} \
+                --barrier ${barr} >> ${DATA_OUT}
+            if [ $? -ne 0 ]
+            then
+                echo >> ${DATA_OUT}
+                echo "aborted," >> ${DATA_OUT}
+                echo "After barr_test..."
+                echo "Error detected, test aborted"
+                exit
+            fi
+            echo >> ${DATA_OUT}
+            
+            echo "barr test done: thread_num=${thread_num}, barr=${barr},"\
+				"s=${s}"
+            s=$((s+1))
+        done
+    done
+done
+

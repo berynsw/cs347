@@ -1,0 +1,21 @@
+TEMP=$(mktemp -d)
+WORK=$(pwd)
+
+
+echo "A" > ${TEMP}/A
+touch ${TEMP}/B
+
+
+cd ${TEMP}
+${WORK}/find . -exec test \! -s {} \; -exec rm {} \; >> A
+
+cat <<EOF | diff A -
+A
+./B
+EOF
+status=$?
+
+cd ${WORK}
+rm -rf ${TEMP}
+
+exit ${status}
